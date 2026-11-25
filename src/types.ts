@@ -68,6 +68,7 @@ export interface XTermInstance {
 }
 
 export interface TerminalTabLike extends BaseTabComponent {
+    sendInput?(data: string): void
     frontend?: {
         xterm?: XTermInstance
     }

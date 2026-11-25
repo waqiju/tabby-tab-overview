@@ -5,6 +5,7 @@ Fullscreen live thumbnail grid overview (`Win+Tab` style) plugin for [Tabby Term
 ## Features
 
 - **Toggle Tab Overview** (`Ctrl+Shift+O` by default, or click the grid icon in the top toolbar)
+- **Send Ctrl+Enter (`CSI 13;5u`)** (`Ctrl+Enter` by default): Workaround for TUI apps (such as `pi`) that rely on Kitty keyboard protocol `Ctrl+Enter` sequences; customizable or removable in **Settings → Hotkeys**
 - Renders live terminal screen thumbnails directly from `xterm.buffer.active` (works across WebGL / Canvas / DOM frontends and inactive background tabs)
 - Keyboard & mouse navigation:
   - `←` `↑` `↓` `→`: Move selection across the grid
