@@ -5,6 +5,11 @@ Fullscreen live thumbnail grid overview (`Win+Tab` style) plugin for [Tabby Term
 ## Features
 
 - **Toggle Tab Overview** (`Ctrl+Shift+O` by default, or click the grid icon in the top toolbar)
+- **Workspace Snapshots (Save & Restore)**:
+  - Subtle **Save** and **Restore** pill icon buttons right next to the tab counter in the Tab Overview header (plus global `Ctrl+Shift+S` quick-save hotkey)
+  - Saves full Tabby recovery tokens (including splits, CWDs, and active `pi` TUI sessions via `tabby-pi-companion`) into named JSON snapshots under `<Tabby config dir>/workspaces/`
+  - **Append + Smart Deduplication**: Restoring opens missing tabs without closing existing ones, skipping already-open `pi` sessions or identical terminal tabs
+  - **Staggered Launch**: Launches restored tabs sequentially with a 250ms stagger so restoring 10+ tabs stays smooth and responsive
 - Renders live terminal screen thumbnails directly from `xterm.buffer.active` (works across WebGL / Canvas / DOM frontends and inactive background tabs)
 - Keyboard & mouse navigation:
   - `←` `↑` `↓` `→`: Move selection across the grid

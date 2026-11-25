@@ -9,6 +9,7 @@ import {
 } from 'tabby-core'
 import { OVERLAY_ID, TabOverviewView } from './overlay'
 import { GRID_ICON_SVG } from './types'
+import { WorkspaceService } from './workspaces'
 
 const OVERVIEW_TAB_RECOVERY_TYPE = 'tabby-tab-overview-tab'
 
@@ -29,6 +30,7 @@ export class TabOverviewTabComponent extends BaseTabComponent implements AfterVi
         injector: Injector,
         private app: AppService,
         private elementRef: ElementRef<HTMLElement>,
+        private workspaces: WorkspaceService,
     ) {
         super(injector)
         this.setTitle('Tab Overview')
@@ -50,6 +52,7 @@ export class TabOverviewTabComponent extends BaseTabComponent implements AfterVi
 
         const view = new TabOverviewView(this.app, {
             mode: 'tab',
+            workspaces: this.workspaces,
             isKeyboardActive: () => this.app.activeTab === this && !document.getElementById(OVERLAY_ID),
         })
         this.view = view

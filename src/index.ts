@@ -13,14 +13,17 @@ import {
 import { TabOverviewOverlay } from './overlay'
 import { TabOverviewRecoveryProvider, TabOverviewTabComponent } from './overviewTab'
 import { GRID_ICON_SVG, isTabOverviewTab } from './types'
+import { WorkspaceService } from './workspaces'
 
 const HOTKEY_ID = 'toggle-tab-overview'
+const SAVE_WORKSPACE_HOTKEY_ID = 'save-tab-workspace'
 
 @Injectable()
 export class TabOverviewConfigProvider extends ConfigProvider {
     defaults = {
         hotkeys: {
             [HOTKEY_ID]: ['Ctrl-Shift-O'],
+            [SAVE_WORKSPACE_HOTKEY_ID]: ['Ctrl-Shift-S'],
         },
     }
 }
@@ -32,6 +35,10 @@ export class TabOverviewHotkeyProvider extends HotkeyProvider {
             {
                 id: HOTKEY_ID,
                 name: 'Toggle Tab Overview (Thumbnail Grid)',
+            },
+            {
+                id: SAVE_WORKSPACE_HOTKEY_ID,
+                name: 'Save Tab Workspace Snapshot',
             },
         ]
     }
@@ -45,13 +52,16 @@ export class TabOverviewService implements OnDestroy {
     constructor(
         private app: AppService,
         hotkeys: HotkeysService,
+        private workspaces: WorkspaceService,
     ) {
-        this.overlay = new TabOverviewOverlay(app, () => this.pinAsTab())
+        this.overlay = new TabOverviewOverlay(app, () => this.pinAsTab(), workspaces)
         hotkeys.hotkey$
             .pipe(takeUntil(this.destroyed$))
             .subscribe((id) => {
                 if (id === HOTKEY_ID) {
                     this.toggle()
+                } else if (id === SAVE_WORKSPACE_HOTKEY_ID) {
+                    void this.workspaces.saveWorkspace().catch(() => {})
                 }
             })
     }
@@ -105,6 +115,7 @@ export class TabOverviewToolbarButtonProvider extends ToolbarButtonProvider {
         { provide: HotkeyProvider, useClass: TabOverviewHotkeyProvider, multi: true },
         { provide: ToolbarButtonProvider, useClass: TabOverviewToolbarButtonProvider, multi: true },
         { provide: TabRecoveryProvider, useClass: TabOverviewRecoveryProvider, multi: true },
+        WorkspaceService,
         TabOverviewService,
     ],
 })

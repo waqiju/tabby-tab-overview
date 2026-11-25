@@ -1,7 +1,8 @@
 import { Subscription } from 'rxjs'
 import { AppService, BaseTabComponent } from 'tabby-core'
 import { renderTabThumbnail } from './renderer'
-import { extractTabTerminalInfo, isTabOverviewTab } from './types'
+import { extractTabTerminalInfo, isTabOverviewTab, RESTORE_ICON_SVG, SAVE_ICON_SVG } from './types'
+import { formatDefaultWorkspaceName, WorkspaceService, WorkspaceSummary } from './workspaces'
 
 export const OVERLAY_ID = 'tabby-tab-overview-root'
 const STYLE_ID = 'tabby-tab-overview-style'
@@ -69,6 +70,231 @@ const OVERLAY_CSS = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    margin-left: auto;
+}
+
+.tto-root .tto-ws-controls {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+}
+
+.tto-root .tto-pill-btn {
+    height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #9ba3ae;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.tto-root .tto-pill-btn svg {
+    width: 13px;
+    height: 13px;
+    display: block;
+}
+
+.tto-root .tto-pill-btn:hover,
+.tto-root .tto-pill-btn.is-active {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #f0f4f8;
+}
+
+.tto-root .tto-ws-status {
+    font-size: 11px;
+    color: #8b949e;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
+.tto-root .tto-ws-status.is-success {
+    color: #7ee787;
+}
+
+.tto-root .tto-ws-status.is-error {
+    color: #ff7b72;
+}
+
+.tto-root .tto-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 100;
+    width: 300px;
+    background: rgba(20, 25, 36, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.65);
+    padding: 12px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.tto-root .tto-popover-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f0f4f8;
+    margin-bottom: 8px;
+}
+
+.tto-root .tto-ws-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(10, 12, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    padding: 6px 9px;
+    color: #e6edf3;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+}
+
+.tto-root .tto-ws-input:focus {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+
+.tto-root .tto-popover-hint {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 6px;
+}
+
+.tto-root .tto-popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.tto-root .tto-btn-primary {
+    background: rgba(88, 166, 255, 0.22);
+    border-color: rgba(88, 166, 255, 0.45);
+    color: #e6edf3;
+}
+
+.tto-root .tto-btn-primary:hover {
+    background: rgba(88, 166, 255, 0.34);
+    color: #ffffff;
+}
+
+.tto-root .tto-ws-list {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tto-root .tto-ws-empty {
+    font-size: 12px;
+    color: #8b949e;
+    padding: 12px 4px;
+    text-align: center;
+}
+
+.tto-root .tto-ws-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    transition: background 110ms ease, border-color 110ms ease;
+}
+
+.tto-root .tto-ws-item:hover {
+    background: rgba(88, 166, 255, 0.14);
+    border-color: rgba(88, 166, 255, 0.35);
+}
+
+.tto-root .tto-ws-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.tto-root .tto-ws-item-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #e6edf3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tto-root .tto-ws-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 2px;
+}
+
+.tto-root .tto-ws-pi-badge {
+    font-size: 10px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(163, 190, 140, 0.16);
+    color: #b5d19b;
+    border: 1px solid rgba(163, 190, 140, 0.3);
+}
+
+.tto-root .tto-ws-item-del {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #8b949e;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tto-root .tto-ws-item-del:hover {
+    background: rgba(248, 81, 73, 0.22);
+    color: #ff7b72;
+}
+
+.tto-root .tto-popover-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+    color: #8b949e;
+}
+
+.tto-root .tto-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #79c0ff;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.tto-root .tto-link-btn:hover {
+    text-decoration: underline;
 }
 
 .tto-root .tto-action-btn {
@@ -273,6 +499,7 @@ interface CardEntry {
 
 export interface TabOverviewViewOptions {
     mode: 'overlay' | 'tab'
+    workspaces?: WorkspaceService
     onDismiss?: () => void
     onPin?: () => void
     isKeyboardActive?: () => boolean
@@ -282,6 +509,14 @@ export class TabOverviewView {
     private rootEl: HTMLElement | null = null
     private gridEl: HTMLElement | null = null
     private countEl: HTMLElement | null = null
+    private wsControlsEl: HTMLElement | null = null
+    private saveBtnEl: HTMLButtonElement | null = null
+    private restoreBtnEl: HTMLButtonElement | null = null
+    private wsStatusEl: HTMLElement | null = null
+    private wsStatusTimer: number | null = null
+    private activePopover: 'save' | 'restore' | null = null
+    private popoverEl: HTMLElement | null = null
+    private docClickHandler: ((e: MouseEvent) => void) | null = null
     private cards: CardEntry[] = []
     private selectedIndex = 0
     private currentCols = 2
@@ -336,6 +571,46 @@ export class TabOverviewView {
 
         titleWrap.appendChild(title)
         titleWrap.appendChild(count)
+
+        if (this.options.workspaces) {
+            const wsControls = document.createElement('div')
+            wsControls.className = 'tto-ws-controls'
+
+            const saveBtn = document.createElement('button')
+            saveBtn.className = 'tto-pill-btn'
+            saveBtn.type = 'button'
+            saveBtn.title = 'Save Workspace Snapshot (Ctrl+Shift+S)'
+            saveBtn.innerHTML = SAVE_ICON_SVG
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.togglePopover('save')
+            })
+
+            const restoreBtn = document.createElement('button')
+            restoreBtn.className = 'tto-pill-btn'
+            restoreBtn.type = 'button'
+            restoreBtn.title = 'Restore Workspace Snapshot'
+            restoreBtn.innerHTML = RESTORE_ICON_SVG
+            restoreBtn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.togglePopover('restore')
+            })
+
+            const statusEl = document.createElement('span')
+            statusEl.className = 'tto-ws-status'
+
+            wsControls.appendChild(saveBtn)
+            wsControls.appendChild(restoreBtn)
+            wsControls.appendChild(statusEl)
+
+            this.wsControlsEl = wsControls
+            this.saveBtnEl = saveBtn
+            this.restoreBtnEl = restoreBtn
+            this.wsStatusEl = statusEl
+
+            titleWrap.appendChild(wsControls)
+        }
+
         topbar.appendChild(titleWrap)
 
         if (this.options.mode === 'overlay') {
@@ -420,6 +695,18 @@ export class TabOverviewView {
             }
         }
         window.addEventListener('resize', this.resizeHandler)
+
+        this.docClickHandler = (e: MouseEvent) => {
+            if (!this.activePopover || !this.wsControlsEl) {
+                return
+            }
+            const target = e.target as Node | null
+            if (target && this.wsControlsEl.contains(target)) {
+                return
+            }
+            this.closePopover()
+        }
+        document.addEventListener('click', this.docClickHandler)
     }
 
     setPaused(paused: boolean): void {
@@ -428,6 +715,7 @@ export class TabOverviewView {
         }
         this.paused = paused
         if (paused) {
+            this.closePopover()
             this.stopRefreshTimer()
             return
         }
@@ -439,6 +727,11 @@ export class TabOverviewView {
     }
 
     destroy(): void {
+        this.closePopover()
+        if (this.wsStatusTimer !== null) {
+            clearTimeout(this.wsStatusTimer)
+            this.wsStatusTimer = null
+        }
         this.stopRefreshTimer()
         this.clearTitleSubs()
         if (this.tabsSub) {
@@ -457,12 +750,20 @@ export class TabOverviewView {
             window.removeEventListener('resize', this.resizeHandler)
             this.resizeHandler = null
         }
+        if (this.docClickHandler) {
+            document.removeEventListener('click', this.docClickHandler)
+            this.docClickHandler = null
+        }
         if (this.rootEl) {
             this.rootEl.remove()
             this.rootEl = null
         }
         this.gridEl = null
         this.countEl = null
+        this.wsControlsEl = null
+        this.saveBtnEl = null
+        this.restoreBtnEl = null
+        this.wsStatusEl = null
         this.cards = []
     }
 
@@ -686,6 +987,288 @@ export class TabOverviewView {
         }
     }
 
+    private setWsStatus(text: string, tone: 'neutral' | 'success' | 'error' = 'neutral', autoClearMs = 4000): void {
+        if (!this.wsStatusEl) {
+            return
+        }
+        if (this.wsStatusTimer !== null) {
+            clearTimeout(this.wsStatusTimer)
+            this.wsStatusTimer = null
+        }
+        this.wsStatusEl.textContent = text
+        this.wsStatusEl.classList.remove('is-success', 'is-error')
+        if (tone === 'success') {
+            this.wsStatusEl.classList.add('is-success')
+        } else if (tone === 'error') {
+            this.wsStatusEl.classList.add('is-error')
+        }
+        if (autoClearMs > 0 && text) {
+            this.wsStatusTimer = window.setTimeout(() => {
+                if (this.wsStatusEl) {
+                    this.wsStatusEl.textContent = ''
+                    this.wsStatusEl.classList.remove('is-success', 'is-error')
+                }
+                this.wsStatusTimer = null
+            }, autoClearMs)
+        }
+    }
+
+    private closePopover(): void {
+        if (this.popoverEl) {
+            this.popoverEl.remove()
+            this.popoverEl = null
+        }
+        this.activePopover = null
+        this.saveBtnEl?.classList.remove('is-active')
+        this.restoreBtnEl?.classList.remove('is-active')
+    }
+
+    private togglePopover(kind: 'save' | 'restore'): void {
+        if (this.activePopover === kind) {
+            this.closePopover()
+            return
+        }
+        this.closePopover()
+        if (!this.wsControlsEl || !this.options.workspaces) {
+            return
+        }
+        this.activePopover = kind
+        if (kind === 'save') {
+            this.saveBtnEl?.classList.add('is-active')
+            this.renderSavePopover()
+        } else {
+            this.restoreBtnEl?.classList.add('is-active')
+            this.renderRestorePopover()
+        }
+    }
+
+    private renderSavePopover(): void {
+        if (!this.wsControlsEl || !this.options.workspaces) {
+            return
+        }
+        const workspaces = this.options.workspaces
+        const popover = document.createElement('div')
+        popover.className = 'tto-popover'
+        popover.addEventListener('click', e => e.stopPropagation())
+
+        const title = document.createElement('div')
+        title.className = 'tto-popover-title'
+        title.textContent = 'Save Workspace Snapshot'
+
+        const input = document.createElement('input')
+        input.className = 'tto-ws-input'
+        input.type = 'text'
+        input.value = formatDefaultWorkspaceName(new Date())
+        input.placeholder = 'Workspace name'
+
+        const tabCount = this.getDisplayTabs().length
+        const hint = document.createElement('div')
+        hint.className = 'tto-popover-hint'
+        hint.textContent = `${tabCount} ${tabCount === 1 ? 'tab' : 'tabs'} will be saved`
+
+        const actions = document.createElement('div')
+        actions.className = 'tto-popover-actions'
+
+        const cancelBtn = document.createElement('button')
+        cancelBtn.className = 'tto-action-btn'
+        cancelBtn.type = 'button'
+        cancelBtn.textContent = 'Cancel'
+        cancelBtn.addEventListener('click', () => this.closePopover())
+
+        const confirmBtn = document.createElement('button')
+        confirmBtn.className = 'tto-action-btn tto-btn-primary'
+        confirmBtn.type = 'button'
+        confirmBtn.textContent = 'Save'
+
+        const submitSave = async () => {
+            confirmBtn.disabled = true
+            try {
+                const summary = await workspaces.saveWorkspace(input.value)
+                this.closePopover()
+                this.setWsStatus(`Saved "${summary.name}" ✓`, 'success')
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Save failed'
+                this.closePopover()
+                this.setWsStatus(message, 'error')
+            }
+        }
+
+        confirmBtn.addEventListener('click', () => {
+            void submitSave()
+        })
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                e.stopPropagation()
+                void submitSave()
+            } else if (e.key === 'Escape') {
+                e.preventDefault()
+                e.stopPropagation()
+                this.closePopover()
+            }
+        })
+
+        actions.appendChild(cancelBtn)
+        actions.appendChild(confirmBtn)
+
+        popover.appendChild(title)
+        popover.appendChild(input)
+        popover.appendChild(hint)
+        popover.appendChild(actions)
+
+        this.wsControlsEl.appendChild(popover)
+        this.popoverEl = popover
+
+        requestAnimationFrame(() => {
+            input.focus()
+            input.select()
+        })
+    }
+
+    private formatSnapshotTime(iso: string): string {
+        const d = new Date(iso)
+        if (Number.isNaN(d.getTime())) {
+            return iso
+        }
+        return formatDefaultWorkspaceName(d)
+    }
+
+    private renderRestorePopover(): void {
+        if (!this.wsControlsEl || !this.options.workspaces) {
+            return
+        }
+        const workspaces = this.options.workspaces
+        if (this.popoverEl) {
+            this.popoverEl.remove()
+            this.popoverEl = null
+        }
+
+        const popover = document.createElement('div')
+        popover.className = 'tto-popover'
+        popover.addEventListener('click', e => e.stopPropagation())
+
+        const title = document.createElement('div')
+        title.className = 'tto-popover-title'
+        title.textContent = 'Restore Workspace Snapshot'
+        popover.appendChild(title)
+
+        const list = document.createElement('div')
+        list.className = 'tto-ws-list'
+
+        const summaries: WorkspaceSummary[] = workspaces.listWorkspaces()
+        if (summaries.length === 0) {
+            const empty = document.createElement('div')
+            empty.className = 'tto-ws-empty'
+            empty.textContent = 'No saved snapshots yet'
+            list.appendChild(empty)
+        } else {
+            for (const item of summaries) {
+                const row = document.createElement('div')
+                row.className = 'tto-ws-item'
+
+                const main = document.createElement('div')
+                main.className = 'tto-ws-item-main'
+
+                const nameEl = document.createElement('div')
+                nameEl.className = 'tto-ws-item-name'
+                nameEl.textContent = item.name
+                nameEl.title = item.name
+
+                const metaEl = document.createElement('div')
+                metaEl.className = 'tto-ws-item-meta'
+
+                const metaText = document.createElement('span')
+                metaText.textContent = `${this.formatSnapshotTime(item.createdAt)} · ${item.tabCount} ${item.tabCount === 1 ? 'tab' : 'tabs'}`
+                metaEl.appendChild(metaText)
+
+                if (item.piSessionCount > 0) {
+                    const piBadge = document.createElement('span')
+                    piBadge.className = 'tto-ws-pi-badge'
+                    piBadge.textContent = `${item.piSessionCount} pi`
+                    metaEl.appendChild(piBadge)
+                }
+
+                main.appendChild(nameEl)
+                main.appendChild(metaEl)
+
+                const delBtn = document.createElement('button')
+                delBtn.className = 'tto-ws-item-del'
+                delBtn.type = 'button'
+                delBtn.textContent = '×'
+                delBtn.title = 'Delete snapshot'
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    workspaces.deleteWorkspace(item.id)
+                    this.renderRestorePopover()
+                })
+
+                row.appendChild(main)
+                row.appendChild(delBtn)
+
+                row.addEventListener('click', () => {
+                    this.closePopover()
+                    void this.runRestore(item)
+                })
+
+                list.appendChild(row)
+            }
+        }
+
+        popover.appendChild(list)
+
+        const footer = document.createElement('div')
+        footer.className = 'tto-popover-footer'
+
+        const dedupHint = document.createElement('span')
+        dedupHint.textContent = 'Appends & skips open tabs'
+
+        const folderBtn = document.createElement('button')
+        folderBtn.className = 'tto-link-btn'
+        folderBtn.type = 'button'
+        folderBtn.textContent = 'Open folder'
+        folderBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            workspaces.openWorkspacesFolder()
+        })
+
+        footer.appendChild(dedupHint)
+        footer.appendChild(folderBtn)
+        popover.appendChild(footer)
+
+        this.wsControlsEl.appendChild(popover)
+        this.popoverEl = popover
+    }
+
+    private async runRestore(item: WorkspaceSummary): Promise<void> {
+        const workspaces = this.options.workspaces
+        if (!workspaces) {
+            return
+        }
+        this.setWsStatus(`Restoring "${item.name}"…`, 'neutral', 0)
+        try {
+            const result = await workspaces.restoreWorkspace(item.id, {
+                onProgress: (done, total) => {
+                    this.setWsStatus(`Restoring ${done}/${total}…`, 'neutral', 0)
+                },
+            })
+            if (result.restored === 0 && result.skippedDuplicates > 0 && result.failed === 0) {
+                this.setWsStatus(`All ${result.skippedDuplicates} already open`, 'success')
+                return
+            }
+            const parts = [`Restored ${result.restored}`]
+            if (result.skippedDuplicates > 0) {
+                parts.push(`${result.skippedDuplicates} skipped`)
+            }
+            if (result.failed > 0) {
+                parts.push(`${result.failed} failed`)
+            }
+            this.setWsStatus(parts.join(' · '), result.failed > 0 ? 'error' : 'success')
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Restore failed'
+            this.setWsStatus(message, 'error')
+        }
+    }
+
     private async closeTabAt(index: number): Promise<void> {
         const tab = this.getDisplayTabs()[index]
         if (!tab) {
@@ -706,6 +1289,20 @@ export class TabOverviewView {
             return
         }
 
+        const consume = () => {
+            e.preventDefault()
+            e.stopPropagation()
+            e.stopImmediatePropagation()
+        }
+
+        if (this.activePopover) {
+            if (e.key === 'Escape') {
+                consume()
+                this.closePopover()
+            }
+            return
+        }
+
         if (this.options.mode === 'tab') {
             const target = e.target
             if (
@@ -714,12 +1311,6 @@ export class TabOverviewView {
             ) {
                 return
             }
-        }
-
-        const consume = () => {
-            e.preventDefault()
-            e.stopPropagation()
-            e.stopImmediatePropagation()
         }
 
         if (e.key === 'Escape') {
@@ -788,6 +1379,7 @@ export class TabOverviewOverlay {
     constructor(
         private app: AppService,
         private onPin?: () => void,
+        private workspaces?: WorkspaceService,
     ) {}
 
     isOpen(): boolean {
@@ -808,6 +1400,7 @@ export class TabOverviewOverlay {
         }
         const view = new TabOverviewView(this.app, {
             mode: 'overlay',
+            workspaces: this.workspaces,
             onDismiss: () => this.close(),
             onPin: this.onPin,
         })

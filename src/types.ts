@@ -7,6 +7,18 @@ export const GRID_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
   <rect x="9" y="9" width="5.5" height="5.5" rx="1.2"/>
 </svg>`
 
+export const SAVE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2.5 3.5a1 1 0 0 1 1-1h7.2L13.5 5.3V12.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/>
+  <path d="M5.2 2.5v3.2h4.8V2.5"/>
+  <path d="M5 13.5V9.2h6v4.3"/>
+</svg>`
+
+export const RESTORE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 4.2v3.3h3.3"/>
+  <path d="M3.3 7.5A5.2 5.2 0 1 1 4.4 11.7"/>
+  <path d="M8 5.3v3l2 1.2"/>
+</svg>`
+
 export interface XTermTheme {
     foreground?: string
     background?: string
