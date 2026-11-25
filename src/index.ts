@@ -6,21 +6,16 @@ import {
     HotkeyDescription,
     HotkeyProvider,
     HotkeysService,
+    TabRecoveryProvider,
     ToolbarButton,
     ToolbarButtonProvider,
 } from 'tabby-core'
 import { TabOverviewOverlay } from './overlay'
-import { isSplitTab, isTerminalTab } from './types'
+import { TabOverviewRecoveryProvider, TabOverviewTabComponent } from './overviewTab'
+import { GRID_ICON_SVG, isSplitTab, isTabOverviewTab, isTerminalTab } from './types'
 
 const HOTKEY_ID = 'toggle-tab-overview'
 const CTRL_ENTER_HOTKEY_ID = 'send-ctrl-enter'
-
-const GRID_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-  <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.2"/>
-  <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.2"/>
-  <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.2"/>
-  <rect x="9" y="9" width="5.5" height="5.5" rx="1.2"/>
-</svg>`
 
 @Injectable()
 export class TabOverviewConfigProvider extends ConfigProvider {
@@ -57,7 +52,7 @@ export class TabOverviewService implements OnDestroy {
         private app: AppService,
         hotkeys: HotkeysService,
     ) {
-        this.overlay = new TabOverviewOverlay(app)
+        this.overlay = new TabOverviewOverlay(app, () => this.pinAsTab())
         hotkeys.hotkey$
             .pipe(takeUntil(this.destroyed$))
             .subscribe((id) => {
@@ -71,6 +66,17 @@ export class TabOverviewService implements OnDestroy {
 
     toggle(): void {
         this.overlay.toggle()
+    }
+
+    pinAsTab(): void {
+        this.overlay.close()
+        const existing = this.app.tabs.find(t => isTabOverviewTab(t))
+        if (existing) {
+            this.app.selectTab(existing)
+            return
+        }
+        const tab = this.app.openNewTabRaw({ type: TabOverviewTabComponent })
+        this.app.selectTab(tab)
     }
 
     private sendCtrlEnter(): void {
@@ -120,10 +126,14 @@ export class TabOverviewToolbarButtonProvider extends ToolbarButtonProvider {
 }
 
 @NgModule({
+    declarations: [
+        TabOverviewTabComponent,
+    ],
     providers: [
         { provide: ConfigProvider, useClass: TabOverviewConfigProvider, multi: true },
         { provide: HotkeyProvider, useClass: TabOverviewHotkeyProvider, multi: true },
         { provide: ToolbarButtonProvider, useClass: TabOverviewToolbarButtonProvider, multi: true },
+        { provide: TabRecoveryProvider, useClass: TabOverviewRecoveryProvider, multi: true },
         TabOverviewService,
     ],
 })

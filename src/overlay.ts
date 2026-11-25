@@ -1,26 +1,36 @@
 import { Subscription } from 'rxjs'
 import { AppService, BaseTabComponent } from 'tabby-core'
 import { renderTabThumbnail } from './renderer'
-import { extractTabTerminalInfo } from './types'
+import { extractTabTerminalInfo, isTabOverviewTab } from './types'
 
-const OVERLAY_ID = 'tabby-tab-overview-root'
+export const OVERLAY_ID = 'tabby-tab-overview-root'
 const STYLE_ID = 'tabby-tab-overview-style'
 const REFRESH_INTERVAL_MS = 250
 
 const OVERLAY_CSS = `
-#${OVERLAY_ID} {
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
+.tto-root {
     display: flex;
     flex-direction: column;
-    background: rgba(10, 12, 18, 0.88);
-    backdrop-filter: blur(18px) saturate(130%);
-    -webkit-backdrop-filter: blur(18px) saturate(130%);
     color: #e6edf3;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     user-select: none;
+}
+
+.tto-root.tto-mode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(10, 12, 18, 0.88);
+    backdrop-filter: blur(18px) saturate(130%);
+    -webkit-backdrop-filter: blur(18px) saturate(130%);
     animation: tabby-overview-fade-in 120ms ease-out;
+}
+
+.tto-root.tto-mode-tab {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 12, 18, 0.96);
 }
 
 @keyframes tabby-overview-fade-in {
@@ -28,33 +38,40 @@ const OVERLAY_CSS = `
     to { opacity: 1; transform: scale(1); }
 }
 
-#${OVERLAY_ID} .tto-topbar {
+.tto-root .tto-topbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 156px 8px 28px;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 14px 28px 8px 28px;
     flex-shrink: 0;
 }
 
-#${OVERLAY_ID} .tto-title-wrap {
+.tto-root .tto-title-wrap {
     display: flex;
-    align-items: baseline;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
 }
 
-#${OVERLAY_ID} .tto-title {
+.tto-root .tto-title {
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.2px;
     color: #f0f4f8;
 }
 
-#${OVERLAY_ID} .tto-count {
+.tto-root .tto-count {
     font-size: 12px;
     color: #8b949e;
 }
 
-#${OVERLAY_ID} .tto-close-overlay {
+.tto-root .tto-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tto-root .tto-action-btn {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: #c9d1d9;
@@ -62,15 +79,21 @@ const OVERLAY_CSS = `
     padding: 4px 10px;
     font-size: 12px;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-#${OVERLAY_ID} .tto-close-overlay:hover {
+.tto-root .tto-action-btn:hover {
     background: rgba(255, 255, 255, 0.16);
     color: #ffffff;
 }
 
-#${OVERLAY_ID} .tto-grid {
+.tto-root .tto-pin-btn:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: rgba(88, 166, 255, 0.45);
+    color: #ffffff;
+}
+
+.tto-root .tto-grid {
     flex: 1;
     min-height: 0;
     box-sizing: border-box;
@@ -80,11 +103,11 @@ const OVERLAY_CSS = `
     gap: 18px;
 }
 
-#${OVERLAY_ID} .tto-grid.is-scrollable .tto-card {
+.tto-root .tto-grid.is-scrollable .tto-card {
     height: 240px;
 }
 
-#${OVERLAY_ID} .tto-card {
+.tto-root .tto-card {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -99,21 +122,21 @@ const OVERLAY_CSS = `
     transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
-#${OVERLAY_ID} .tto-card:hover {
+.tto-root .tto-card:hover {
     transform: translateY(-2px);
     border-color: rgba(136, 192, 208, 0.6);
 }
 
-#${OVERLAY_ID} .tto-card.is-selected {
+.tto-root .tto-card.is-selected {
     border-color: #58a6ff;
     box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.35), 0 14px 32px rgba(0, 0, 0, 0.6);
 }
 
-#${OVERLAY_ID} .tto-card.is-active .tto-card-header {
+.tto-root .tto-card.is-active .tto-card-header {
     background: rgba(88, 166, 255, 0.14);
 }
 
-#${OVERLAY_ID} .tto-card-header {
+.tto-root .tto-card-header {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -123,7 +146,7 @@ const OVERLAY_CSS = `
     flex-shrink: 0;
 }
 
-#${OVERLAY_ID} .tto-index {
+.tto-root .tto-index {
     min-width: 20px;
     height: 20px;
     padding: 0 5px;
@@ -138,12 +161,12 @@ const OVERLAY_CSS = `
     flex-shrink: 0;
 }
 
-#${OVERLAY_ID} .tto-card.is-selected .tto-index {
+.tto-root .tto-card.is-selected .tto-index {
     background: #58a6ff;
     color: #0d1117;
 }
 
-#${OVERLAY_ID} .tto-card-title {
+.tto-root .tto-card-title {
     flex: 1;
     min-width: 0;
     font-size: 12px;
@@ -154,7 +177,7 @@ const OVERLAY_CSS = `
     text-overflow: ellipsis;
 }
 
-#${OVERLAY_ID} .tto-badge {
+.tto-root .tto-badge {
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 999px;
@@ -164,13 +187,13 @@ const OVERLAY_CSS = `
     flex-shrink: 0;
 }
 
-#${OVERLAY_ID} .tto-badge.is-pane {
+.tto-root .tto-badge.is-pane {
     background: rgba(163, 190, 140, 0.16);
     color: #b5d19b;
     border-color: rgba(163, 190, 140, 0.3);
 }
 
-#${OVERLAY_ID} .tto-card-close {
+.tto-root .tto-card-close {
     width: 20px;
     height: 20px;
     border: none;
@@ -187,12 +210,12 @@ const OVERLAY_CSS = `
     transition: background 100ms ease, color 100ms ease;
 }
 
-#${OVERLAY_ID} .tto-card-close:hover {
+.tto-root .tto-card-close:hover {
     background: rgba(248, 81, 73, 0.22);
     color: #ff7b72;
 }
 
-#${OVERLAY_ID} .tto-card-body {
+.tto-root .tto-card-body {
     flex: 1;
     min-height: 0;
     position: relative;
@@ -200,7 +223,7 @@ const OVERLAY_CSS = `
     background: #131722;
 }
 
-#${OVERLAY_ID} .tto-canvas {
+.tto-root .tto-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -208,13 +231,13 @@ const OVERLAY_CSS = `
     display: block;
 }
 
-#${OVERLAY_ID} .tto-empty {
+.tto-root .tto-empty {
     margin: auto;
     color: #8b949e;
     font-size: 14px;
 }
 
-#${OVERLAY_ID} .tto-footer {
+.tto-root .tto-footer {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -227,7 +250,7 @@ const OVERLAY_CSS = `
     flex-wrap: wrap;
 }
 
-#${OVERLAY_ID} .tto-hint kbd {
+.tto-root .tto-hint kbd {
     display: inline-block;
     padding: 1px 6px;
     margin-right: 4px;
@@ -243,52 +266,59 @@ const OVERLAY_CSS = `
 interface CardEntry {
     tab: BaseTabComponent
     cardEl: HTMLElement
+    titleEl: HTMLElement
     canvasEl: HTMLCanvasElement
+    lastTitle: string
 }
 
-export class TabOverviewOverlay {
+export interface TabOverviewViewOptions {
+    mode: 'overlay' | 'tab'
+    onDismiss?: () => void
+    onPin?: () => void
+    isKeyboardActive?: () => boolean
+}
+
+export class TabOverviewView {
     private rootEl: HTMLElement | null = null
     private gridEl: HTMLElement | null = null
     private countEl: HTMLElement | null = null
     private cards: CardEntry[] = []
     private selectedIndex = 0
     private currentCols = 2
+    private paused = false
     private refreshTimer: number | null = null
     private tabsSub: Subscription | null = null
+    private activeTabSub: Subscription | null = null
+    private titleSubs: Subscription[] = []
     private keydownHandler: ((e: KeyboardEvent) => void) | null = null
     private resizeHandler: (() => void) | null = null
 
-    constructor(private app: AppService) {}
+    constructor(
+        private app: AppService,
+        private options: TabOverviewViewOptions,
+    ) {}
 
-    isOpen(): boolean {
-        return this.rootEl !== null
-    }
-
-    toggle(): void {
-        if (this.isOpen()) {
-            this.close()
-        } else {
-            this.open()
-        }
-    }
-
-    open(): void {
-        if (this.isOpen()) {
+    mount(container: HTMLElement): void {
+        if (this.rootEl) {
             return
         }
 
         this.ensureStyle()
 
-        const activeIdx = this.app.activeTab ? this.app.tabs.indexOf(this.app.activeTab) : 0
+        const displayTabs = this.getDisplayTabs()
+        const activeIdx = this.app.activeTab ? displayTabs.indexOf(this.app.activeTab) : 0
         this.selectedIndex = activeIdx >= 0 ? activeIdx : 0
 
         const root = document.createElement('div')
-        root.id = OVERLAY_ID
-        root.addEventListener('click', (e) => {
-            if (e.target === root || e.target === this.gridEl) {
-                this.close()
-            }
-        })
+        root.className = `tto-root ${this.options.mode === 'overlay' ? 'tto-mode-overlay' : 'tto-mode-tab'}`
+        if (this.options.mode === 'overlay') {
+            root.id = OVERLAY_ID
+            root.addEventListener('click', (e) => {
+                if (e.target === root || e.target === this.gridEl) {
+                    this.options.onDismiss?.()
+                }
+            })
+        }
 
         const topbar = document.createElement('div')
         topbar.className = 'tto-topbar'
@@ -306,16 +336,38 @@ export class TabOverviewOverlay {
 
         titleWrap.appendChild(title)
         titleWrap.appendChild(count)
-
-        const closeBtn = document.createElement('button')
-        closeBtn.className = 'tto-close-overlay'
-        closeBtn.type = 'button'
-        closeBtn.textContent = 'Esc'
-        closeBtn.title = 'Close overview'
-        closeBtn.addEventListener('click', () => this.close())
-
         topbar.appendChild(titleWrap)
-        topbar.appendChild(closeBtn)
+
+        if (this.options.mode === 'overlay') {
+            const actions = document.createElement('div')
+            actions.className = 'tto-actions'
+
+            if (this.options.onPin) {
+                const pinBtn = document.createElement('button')
+                pinBtn.className = 'tto-action-btn tto-pin-btn'
+                pinBtn.type = 'button'
+                pinBtn.textContent = 'Pin'
+                pinBtn.title = 'Pin as standalone tab'
+                pinBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    this.options.onPin?.()
+                })
+                actions.appendChild(pinBtn)
+            }
+
+            const closeBtn = document.createElement('button')
+            closeBtn.className = 'tto-action-btn tto-close-overlay'
+            closeBtn.type = 'button'
+            closeBtn.textContent = 'Esc'
+            closeBtn.title = 'Close overview'
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                this.options.onDismiss?.()
+            })
+            actions.appendChild(closeBtn)
+
+            topbar.appendChild(actions)
+        }
 
         const grid = document.createElement('div')
         grid.className = 'tto-grid'
@@ -323,31 +375,37 @@ export class TabOverviewOverlay {
 
         const footer = document.createElement('div')
         footer.className = 'tto-footer'
+        const escHint = this.options.mode === 'overlay'
+            ? '<span class="tto-hint"><kbd>Esc</kbd> Dismiss</span>'
+            : ''
         footer.innerHTML = `
             <span class="tto-hint"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Navigate</span>
             <span class="tto-hint"><kbd>Enter</kbd> / Click Switch</span>
             <span class="tto-hint"><kbd>1</kbd>-<kbd>9</kbd> Quick Jump</span>
             <span class="tto-hint"><kbd>Del</kbd> Close Tab</span>
-            <span class="tto-hint"><kbd>Esc</kbd> Dismiss</span>
+            ${escHint}
         `
 
         root.appendChild(topbar)
         root.appendChild(grid)
         root.appendChild(footer)
-        document.body.appendChild(root)
+        container.appendChild(root)
 
         this.rootEl = root
         this.rebuildGrid()
 
-        // Render thumbnails on next animation frame after layout settles
         requestAnimationFrame(() => this.refreshThumbnails())
-
-        this.refreshTimer = window.setInterval(() => {
-            this.refreshThumbnails()
-        }, REFRESH_INTERVAL_MS)
+        this.startRefreshTimer()
 
         this.tabsSub = this.app.tabsChanged$.subscribe(() => {
-            if (this.isOpen()) {
+            if (this.rootEl && !this.paused) {
+                this.rebuildGrid()
+                requestAnimationFrame(() => this.refreshThumbnails())
+            }
+        })
+
+        this.activeTabSub = this.app.activeTabChange$.subscribe(() => {
+            if (this.rootEl && !this.paused) {
                 this.rebuildGrid()
                 requestAnimationFrame(() => this.refreshThumbnails())
             }
@@ -357,21 +415,39 @@ export class TabOverviewOverlay {
         window.addEventListener('keydown', this.keydownHandler, { capture: true })
 
         this.resizeHandler = () => {
-            if (this.isOpen()) {
+            if (this.rootEl && !this.paused) {
                 requestAnimationFrame(() => this.refreshThumbnails())
             }
         }
         window.addEventListener('resize', this.resizeHandler)
     }
 
-    close(): void {
-        if (this.refreshTimer !== null) {
-            clearInterval(this.refreshTimer)
-            this.refreshTimer = null
+    setPaused(paused: boolean): void {
+        if (this.paused === paused) {
+            return
         }
+        this.paused = paused
+        if (paused) {
+            this.stopRefreshTimer()
+            return
+        }
+        if (this.rootEl) {
+            this.rebuildGrid()
+            requestAnimationFrame(() => this.refreshThumbnails())
+            this.startRefreshTimer()
+        }
+    }
+
+    destroy(): void {
+        this.stopRefreshTimer()
+        this.clearTitleSubs()
         if (this.tabsSub) {
             this.tabsSub.unsubscribe()
             this.tabsSub = null
+        }
+        if (this.activeTabSub) {
+            this.activeTabSub.unsubscribe()
+            this.activeTabSub = null
         }
         if (this.keydownHandler) {
             window.removeEventListener('keydown', this.keydownHandler, { capture: true })
@@ -388,11 +464,41 @@ export class TabOverviewOverlay {
         this.gridEl = null
         this.countEl = null
         this.cards = []
-        this.app.activeTab?.emitFocused()
+    }
+
+    private startRefreshTimer(): void {
+        if (this.paused || this.refreshTimer !== null) {
+            return
+        }
+        this.refreshTimer = window.setInterval(() => {
+            this.refreshThumbnails()
+        }, REFRESH_INTERVAL_MS)
+    }
+
+    private stopRefreshTimer(): void {
+        if (this.refreshTimer !== null) {
+            clearInterval(this.refreshTimer)
+            this.refreshTimer = null
+        }
+    }
+
+    private clearTitleSubs(): void {
+        for (const sub of this.titleSubs) {
+            sub.unsubscribe()
+        }
+        this.titleSubs = []
+    }
+
+    private getDisplayTabs(): BaseTabComponent[] {
+        return this.app.tabs.filter(tab => !isTabOverviewTab(tab))
     }
 
     private ensureStyle(): void {
-        if (document.getElementById(STYLE_ID)) {
+        const existing = document.getElementById(STYLE_ID)
+        if (existing) {
+            if (existing.textContent !== OVERLAY_CSS) {
+                existing.textContent = OVERLAY_CSS
+            }
             return
         }
         const style = document.createElement('style')
@@ -409,12 +515,23 @@ export class TabOverviewOverlay {
         return 5
     }
 
+    private syncCardTitle(entry: CardEntry): void {
+        const { title } = extractTabTerminalInfo(entry.tab)
+        if (title !== entry.lastTitle) {
+            entry.lastTitle = title
+            entry.titleEl.textContent = title
+            entry.titleEl.title = title
+        }
+    }
+
     private rebuildGrid(): void {
         if (!this.gridEl || !this.countEl) {
             return
         }
 
-        const tabs = this.app.tabs
+        this.clearTitleSubs()
+
+        const tabs = this.getDisplayTabs()
         this.countEl.textContent = `${tabs.length} ${tabs.length === 1 ? 'tab' : 'tabs'}`
 
         if (this.selectedIndex >= tabs.length) {
@@ -514,15 +631,31 @@ export class TabOverviewOverlay {
             })
 
             this.gridEl!.appendChild(card)
-            this.cards.push({ tab, cardEl: card, canvasEl: canvas })
+            const entry: CardEntry = {
+                tab,
+                cardEl: card,
+                titleEl,
+                canvasEl: canvas,
+                lastTitle: info.title,
+            }
+            this.cards.push(entry)
+
+            if (tab.titleChange$) {
+                this.titleSubs.push(
+                    tab.titleChange$.subscribe(() => {
+                        this.syncCardTitle(entry)
+                    }),
+                )
+            }
         })
     }
 
     private refreshThumbnails(): void {
-        if (!this.isOpen()) {
+        if (!this.rootEl || this.paused) {
             return
         }
         for (const entry of this.cards) {
+            this.syncCardTitle(entry)
             renderTabThumbnail(entry.tab, entry.canvasEl)
         }
     }
@@ -548,24 +681,39 @@ export class TabOverviewOverlay {
 
     private activateTab(tab: BaseTabComponent): void {
         this.app.selectTab(tab)
-        this.close()
+        if (this.options.mode === 'overlay') {
+            this.options.onDismiss?.()
+        }
     }
 
     private async closeTabAt(index: number): Promise<void> {
-        const tab = this.app.tabs[index]
+        const tab = this.getDisplayTabs()[index]
         if (!tab) {
             return
         }
         await this.app.closeTab(tab, true)
-        if (this.isOpen()) {
+        if (this.rootEl && !this.paused) {
             this.rebuildGrid()
             requestAnimationFrame(() => this.refreshThumbnails())
         }
     }
 
     private handleKeyDown(e: KeyboardEvent): void {
-        if (!this.isOpen()) {
+        if (!this.rootEl || this.paused) {
             return
+        }
+        if (this.options.isKeyboardActive && !this.options.isKeyboardActive()) {
+            return
+        }
+
+        if (this.options.mode === 'tab') {
+            const target = e.target
+            if (
+                target instanceof HTMLInputElement ||
+                (target instanceof HTMLTextAreaElement && !target.classList.contains('xterm-helper-textarea'))
+            ) {
+                return
+            }
         }
 
         const consume = () => {
@@ -575,18 +723,20 @@ export class TabOverviewOverlay {
         }
 
         if (e.key === 'Escape') {
-            consume()
-            this.close()
+            if (this.options.mode === 'overlay') {
+                consume()
+                this.options.onDismiss?.()
+            }
             return
         }
 
         if (e.key === 'Enter') {
             consume()
-            const target = this.app.tabs[this.selectedIndex]
+            const target = this.getDisplayTabs()[this.selectedIndex]
             if (target) {
                 this.activateTab(target)
-            } else {
-                this.close()
+            } else if (this.options.mode === 'overlay') {
+                this.options.onDismiss?.()
             }
             return
         }
@@ -615,7 +765,7 @@ export class TabOverviewOverlay {
             return
         }
 
-        if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === 'Delete' || e.key === 'Backspace')) {
             consume()
             void this.closeTabAt(this.selectedIndex)
             return
@@ -623,10 +773,54 @@ export class TabOverviewOverlay {
 
         if (!e.ctrlKey && !e.altKey && !e.metaKey && /^[1-9]$/.test(e.key)) {
             const idx = Number(e.key) - 1
-            if (idx < this.app.tabs.length) {
+            const displayTabs = this.getDisplayTabs()
+            if (idx < displayTabs.length) {
                 consume()
-                this.activateTab(this.app.tabs[idx])
+                this.activateTab(displayTabs[idx])
             }
         }
+    }
+}
+
+export class TabOverviewOverlay {
+    private view: TabOverviewView | null = null
+
+    constructor(
+        private app: AppService,
+        private onPin?: () => void,
+    ) {}
+
+    isOpen(): boolean {
+        return this.view !== null
+    }
+
+    toggle(): void {
+        if (this.isOpen()) {
+            this.close()
+        } else {
+            this.open()
+        }
+    }
+
+    open(): void {
+        if (this.isOpen()) {
+            return
+        }
+        const view = new TabOverviewView(this.app, {
+            mode: 'overlay',
+            onDismiss: () => this.close(),
+            onPin: this.onPin,
+        })
+        this.view = view
+        view.mount(document.body)
+    }
+
+    close(): void {
+        if (!this.view) {
+            return
+        }
+        this.view.destroy()
+        this.view = null
+        this.app.activeTab?.emitFocused()
     }
 }

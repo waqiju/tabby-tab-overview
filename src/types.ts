@@ -1,5 +1,12 @@
 import { BaseTabComponent } from 'tabby-core'
 
+export const GRID_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+  <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.2"/>
+  <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.2"/>
+  <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.2"/>
+  <rect x="9" y="9" width="5.5" height="5.5" rx="1.2"/>
+</svg>`
+
 export interface XTermTheme {
     foreground?: string
     background?: string
@@ -88,6 +95,20 @@ export interface TabTerminalInfo {
 export function isSplitTab(tab: BaseTabComponent): tab is SplitTabLike {
     const candidate = tab as Partial<SplitTabLike>
     return typeof candidate.getAllTabs === 'function' && typeof candidate.getFocusedTab === 'function'
+}
+
+export function isTabOverviewTab(tab: BaseTabComponent | null | undefined): boolean {
+    if (!tab) {
+        return false
+    }
+    if ((tab as { isTabOverviewTab?: boolean }).isTabOverviewTab === true) {
+        return true
+    }
+    if (isSplitTab(tab)) {
+        const allTabs = tab.getAllTabs()
+        return allTabs.length > 0 && allTabs.every(t => (t as { isTabOverviewTab?: boolean }).isTabOverviewTab === true)
+    }
+    return false
 }
 
 export function isTerminalTab(tab: BaseTabComponent | null | undefined): tab is TerminalTabLike {
