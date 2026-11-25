@@ -12,17 +12,15 @@ import {
 } from 'tabby-core'
 import { TabOverviewOverlay } from './overlay'
 import { TabOverviewRecoveryProvider, TabOverviewTabComponent } from './overviewTab'
-import { GRID_ICON_SVG, isSplitTab, isTabOverviewTab, isTerminalTab } from './types'
+import { GRID_ICON_SVG, isTabOverviewTab } from './types'
 
 const HOTKEY_ID = 'toggle-tab-overview'
-const CTRL_ENTER_HOTKEY_ID = 'send-ctrl-enter'
 
 @Injectable()
 export class TabOverviewConfigProvider extends ConfigProvider {
     defaults = {
         hotkeys: {
             [HOTKEY_ID]: ['Ctrl-Shift-O'],
-            [CTRL_ENTER_HOTKEY_ID]: ['Ctrl-Enter'],
         },
     }
 }
@@ -34,10 +32,6 @@ export class TabOverviewHotkeyProvider extends HotkeyProvider {
             {
                 id: HOTKEY_ID,
                 name: 'Toggle Tab Overview (Thumbnail Grid)',
-            },
-            {
-                id: CTRL_ENTER_HOTKEY_ID,
-                name: 'Send Ctrl+Enter (CSI 13;5u)',
             },
         ]
     }
@@ -58,8 +52,6 @@ export class TabOverviewService implements OnDestroy {
             .subscribe((id) => {
                 if (id === HOTKEY_ID) {
                     this.toggle()
-                } else if (id === CTRL_ENTER_HOTKEY_ID) {
-                    this.sendCtrlEnter()
                 }
             })
     }
@@ -77,27 +69,6 @@ export class TabOverviewService implements OnDestroy {
         }
         const tab = this.app.openNewTabRaw({ type: TabOverviewTabComponent })
         this.app.selectTab(tab)
-    }
-
-    private sendCtrlEnter(): void {
-        if (this.overlay.isOpen()) {
-            return
-        }
-        const activeEl = document.activeElement
-        if (
-            activeEl instanceof HTMLInputElement ||
-            (activeEl instanceof HTMLTextAreaElement && !activeEl.classList.contains('xterm-helper-textarea'))
-        ) {
-            return
-        }
-        const activeTab = this.app.activeTab
-        if (!activeTab) {
-            return
-        }
-        const focusedTab = isSplitTab(activeTab) ? activeTab.getFocusedTab() : activeTab
-        if (isTerminalTab(focusedTab) && typeof focusedTab.sendInput === 'function') {
-            focusedTab.sendInput('\x1b[13;5u')
-        }
     }
 
     ngOnDestroy(): void {
