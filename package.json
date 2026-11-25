@@ -1,0 +1,32 @@
+{
+  "name": "tabby-tab-overview",
+  "version": "0.1.0",
+  "description": "Fullscreen live thumbnail grid overview (Win+Tab style) for Tabby Terminal",
+  "author": "qianjun",
+  "keywords": [
+    "tabby-plugin"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "deploy": "npm run build && node scripts/deploy.mjs"
+  },
+  "peerDependencies": {
+    "@angular/core": "*",
+    "tabby-core": "*",
+    "tabby-terminal": "*"
+  },
+  "devDependencies": {
+    "@angular/core": "^15.2.10",
+    "rxjs": "^7.8.1",
+    "tabby-core": "1.0.231-nightly.0",
+    "tabby-terminal": "1.0.231-nightly.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.5",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
