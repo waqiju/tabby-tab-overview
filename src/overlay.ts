@@ -70,7 +70,13 @@ const OVERLAY_CSS = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-left: auto;
+}
+
+.tto-root .tto-divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.14);
+    flex-shrink: 0;
 }
 
 .tto-root .tto-ws-controls {
@@ -572,6 +578,7 @@ export class TabOverviewView {
         titleWrap.appendChild(title)
         titleWrap.appendChild(count)
 
+        let statusEl: HTMLSpanElement | null = null
         if (this.options.workspaces) {
             const wsControls = document.createElement('div')
             wsControls.className = 'tto-ws-controls'
@@ -596,12 +603,11 @@ export class TabOverviewView {
                 this.togglePopover('restore')
             })
 
-            const statusEl = document.createElement('span')
+            statusEl = document.createElement('span')
             statusEl.className = 'tto-ws-status'
 
             wsControls.appendChild(saveBtn)
             wsControls.appendChild(restoreBtn)
-            wsControls.appendChild(statusEl)
 
             this.wsControlsEl = wsControls
             this.saveBtnEl = saveBtn
@@ -614,6 +620,12 @@ export class TabOverviewView {
         topbar.appendChild(titleWrap)
 
         if (this.options.mode === 'overlay') {
+            if (this.options.workspaces) {
+                const divider = document.createElement('span')
+                divider.className = 'tto-divider'
+                topbar.appendChild(divider)
+            }
+
             const actions = document.createElement('div')
             actions.className = 'tto-actions'
 
@@ -642,6 +654,10 @@ export class TabOverviewView {
             actions.appendChild(closeBtn)
 
             topbar.appendChild(actions)
+        }
+
+        if (statusEl) {
+            topbar.appendChild(statusEl)
         }
 
         const grid = document.createElement('div')
